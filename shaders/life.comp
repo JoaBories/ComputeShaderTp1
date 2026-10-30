@@ -1,0 +1,36 @@
+#version 430 core
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(std430, binding = 0) readonly buffer CurrentGrid { uint current[]; };
+layout(std430, binding = 1) writeonly buffer NextGrid { uint next[]; };
+uniform uint width;
+uniform uint height;
+
+int index(vec2 pos)
+{
+    return int(pos.y * width + pos.x);
+}
+
+uint checkNeighbor(vec2 pos, vec2 offset)
+{
+    vec2 neigh = mod(pos + offset, vec2(width, height));
+    return current[index(neigh)];
+}
+
+void main() 
+{
+    vec2 pos = gl_GlobalInvocationID.xy;
+    uint count = 0;
+    
+    count += checkNeighbor(pos, vec2(-1,-1));
+    count += checkNeighbor(pos, vec2(-1, 0));
+    count += checkNeighbor(pos, vec2(-1, 1));
+    count += checkNeighbor(pos, vec2( 0,-1));
+    count += checkNeighbor(pos, vec2( 0, 1));
+    count += checkNeighbor(pos, vec2( 1,-1));
+    count += checkNeighbor(pos, vec2( 1, 0));
+    count += checkNeighbor(pos, vec2( 1, 1));
+    
+    bool self = current[index(pos)] == 1;
+    bool new = (self && (count == 2 || count == 3)) || (!self && count == 3);
+    next[index(pos)] = int(new);
+}
